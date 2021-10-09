@@ -24,7 +24,9 @@ function Bird:adjustPosition(dt)
 
 	-- on space jump 
 	if love.keyboard.wasKeyPressed('space') == true then
-		self.deltaY = self.deltaY - self.ANTI_GRAVITY_RATE
+		if self.y >= 0 then
+			self.deltaY = self.deltaY - self.ANTI_GRAVITY_RATE
+		end
 	end
 
 	-- update Y coordinate to Render 

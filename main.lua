@@ -5,6 +5,10 @@ Class = require 'Res/classic'
 
 require 'Bird'
 require 'Pipes'
+require 'StateMachine'
+require 'GameStates/BaseState'
+require 'GameStates/PlayState'
+require 'GameStates/TitleState'
 
 -- constants
 
@@ -30,16 +34,6 @@ local backgroundImageScroll = 0
 local backgroundImage = love.graphics.newImage('Res/background.jpg')
 local bottomWallImage = love.graphics.newImage('Res/bottomWall.jpg')
 
-local pipesList = {}
-
--- keeps track of when to spawn a new pipe
-local timer = 0
-local PIPE_SPAWN_RATE = 3
-local lastY = -PIPE_HEIGHT + math.random(80) + 30
-local gapBetweenPipes = 120
-local isGameOn = true
-local gameScore = 0
-
 function love.load()
 	love.graphics.setDefaultFilter('nearest','nearest')
 
@@ -56,7 +50,19 @@ function love.load()
 		vsync = true
 	})
 
-	bird = Bird()
+	-- initialise the fonts
+	smallFont = love.graphics.newFont('Res/font.ttf', 8)
+    mediumFont = love.graphics.newFont('Res/font.ttf', 14)
+    flappyFont = love.graphics.newFont('Res/font.ttf', 28)
+    hugeFont = love.graphics.newFont('Res/font.ttf', 56)
+    love.graphics.setFont(flappyFont)
+
+    -- initialize state machine with all state-returning functions
+    gStateMachine = StateMachine {
+        ['title'] = function() return TitleState() end,
+        ['play'] = function() return PlayState() end,
+    }
+    gStateMachine:change('title')
 
 	-- creating the empty table to keep track of which key was pressed in last frame
 	love.keyboard.keyPressed = {}
@@ -77,55 +83,22 @@ end
 
 -- method to check if key was pressed in last frame
 function love.keyboard.wasKeyPressed(key)
-	return love.keyboard.keyPressed[key]
+	if love.keyboard.keyPressed[key] then
+		return true
+	else
+		return false
+	end 
 end
 
 function love.update(dt)
 
-	if isGameOn then
-		-- update x coordinate of images to generate parallex effect
-		backgroundImageScroll = (backgroundImageScroll + BACKGROUND_SCROLL_SPEED * dt)%BACKGROUND_LOOPING_POINT
-		bottomWallImageScroll = (bottomWallImageScroll + BOTTOM_SCROLL_SPEED * dt) % BOTTOM_LOOPING_POINT
+	-- update x coordinate of images to generate parallex effect
+	backgroundImageScroll = (backgroundImageScroll + BACKGROUND_SCROLL_SPEED * dt)%BACKGROUND_LOOPING_POINT
+	bottomWallImageScroll = (bottomWallImageScroll + BOTTOM_SCROLL_SPEED * dt) % BOTTOM_LOOPING_POINT
 
-		-- increment timer
-		timer = timer + dt
-
-		-- if timer is greater than 2 sec add new pipe to table
-		if timer > PIPE_SPAWN_RATE then
-			local y = math.max(-PIPE_HEIGHT + 15, 
-	                math.min(lastY + math.random(-30, 30), VIRTUAL_HEIGHT - gapBetweenPipes - PIPE_HEIGHT))
-	        lastY = y
-			table.insert(pipesList,Pipes(y))
-			timer = 0
-		end
-
-		-- Update Position of Bird
-		bird:adjustPosition(dt)
-
-		-- update position of each pipe in table
-		for key, pipe in pairs(pipesList) do
-			pipe:adjustPosition(dt)
-
-			if bird:collide(pipe) then
-				isGameOn = false
-				break
-			end
-
-			if bird:crossedPipe(pipe) then
-				if not pipe.crossed then 
-					gameScore = gameScore + 1
-					pipe.crossed = true
-				end
-			end
-			
-
-			-- if pipe has scrolled the complete screen delete it  
-			if pipe.x < -PIPE_WIDTH then
-				table.remove(pipesList,key)
-			end
-		end
-
-	end
+	-- update the game state
+	gStateMachine:update(dt)
+		
 	-- clear after each frame
 	love.keyboard.keyPressed = {}
 	
@@ -133,18 +106,14 @@ end
 
 function love.draw()
 	push:apply('start')
-		-- render images
-		love.graphics.draw(backgroundImage,-1*backgroundImageScroll,0)
-		love.graphics.print('Score : '..tostring(gameScore),VIRTUAL_WIDTH - 100,100)
 
-		-- render all pipes in table
-		for key, pipe in pairs(pipesList) do
-			pipe:renderPipes()
-		end
+	-- render images
+	love.graphics.draw(backgroundImage,-1*backgroundImageScroll,0)
 
-		love.graphics.draw(bottomWallImage,-1*bottomWallImageScroll,VIRTUAL_HEIGHT-40)
+	-- render based on Game State
+	gStateMachine:render()
 
-		-- render Bird
-		bird:renderBird()
+	love.graphics.draw(bottomWallImage,-1*bottomWallImageScroll,VIRTUAL_HEIGHT-40)
+
 	push:apply('end')
 end
