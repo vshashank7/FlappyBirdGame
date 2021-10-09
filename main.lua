@@ -9,6 +9,8 @@ require 'StateMachine'
 require 'GameStates/BaseState'
 require 'GameStates/PlayState'
 require 'GameStates/TitleState'
+require 'GameStates/ScoreState'
+require 'GameStates/WaitingState'
 
 -- constants
 
@@ -61,6 +63,8 @@ function love.load()
     gStateMachine = StateMachine {
         ['title'] = function() return TitleState() end,
         ['play'] = function() return PlayState() end,
+        ['score'] = function() return ScoreState() end,
+        ['waiting'] = function() return WaitingState() end
     }
     gStateMachine:change('title')
 

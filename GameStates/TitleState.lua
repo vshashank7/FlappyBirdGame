@@ -4,7 +4,7 @@ TitleState = Class{__includes = BaseState} --- inheritance
 
 function TitleState:update(dt)
     if love.keyboard.wasKeyPressed('enter') or love.keyboard.wasKeyPressed('return') then
-        gStateMachine:change('play')
+        gStateMachine:change('waiting')
     end
 end
 

@@ -31,7 +31,7 @@ function PlayState:update(dt)
 
 	---- check if bird hits the floor
 	if self.bird.y >= VIRTUAL_HEIGHT - 20 then
-    	gStateMachine:change('title')
+    	gStateMachine:change('score',self.gameScore)
 	end
 
 	-- update position of each pipe in table
@@ -40,7 +40,7 @@ function PlayState:update(dt)
 
 		---- check collision of bird with the pipe
 		if self.bird:collide(pipe) then
-			gStateMachine:change('title')
+			gStateMachine:change('score',self.gameScore)
 			break
 		end
 
@@ -65,7 +65,8 @@ function PlayState:render()
 		pipe:renderPipes()
 	end
 
-	love.graphics.print('Score : '..tostring(self.gameScore),VIRTUAL_WIDTH - 100,100)
+	love.graphics.setFont(mediumFont)
+	love.graphics.print('Score : '..tostring(self.gameScore),10,10)
 	-- render Bird
 	self.bird:renderBird()
 end
